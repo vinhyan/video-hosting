@@ -1,0 +1,18 @@
+<main>
+  <h2 class='admin-title'>Hello Admin!</h2>
+  <div class='admin-container'>
+    {{#each videos}}
+      <form
+        class='admin-vid-container'
+        action='/delete/{{this.videoId}}'
+        method='post'
+      >
+        <h4>{{this.title}}</h4>
+        <p>Number of Likes: {{this.likes}}</p>
+        <p>Number of Comments: {{this.totalComments}}</p>
+        <button type='submit'>Delete this video</button>
+      </form>
+    {{/each}}
+  </div>
+
+</main>

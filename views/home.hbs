@@ -1,0 +1,23 @@
+<main>
+  <div class='container-title'>
+    <h2 class='title'>Welcome to VPlay</h2>
+    <form action='/search' method='post'>
+      <input type='text' placeholder='Search video' name='keyword' />
+      <button type='submit'>Search</button>
+    </form>
+  </div>
+  <div class='container-videos'>
+    {{#each videos}}
+      <form action='/view-details/{{this.videoId}}' method='post'>
+        <div class='vid-info'>
+          <h3>{{this.title}}</h3>
+          <p>By {{this.channel}}</p>
+        </div>
+
+        <img src='{{this.image}}' alt='{{this.title}}' />
+        <button type='submit'>View Details</button>
+      </form>
+    {{/each}}
+  </div>
+
+</main>

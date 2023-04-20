@@ -1,0 +1,44 @@
+<main>
+  <iframe
+    width='854'
+    height='480'
+    src='https://www.youtube.com/embed/{{video.videoId}}'
+    title='YouTube video player'
+    frameborder='0'
+    allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+    allowfullscreen
+  ></iframe>
+  <div class='container-details'>
+    <h2>{{video.title}}</h2>
+    <div class='vid-details-container'>
+      <div class='vid-details'>
+        <p class='channel'>{{video.channel}}</p>
+        <p class='date'>{{video.uploadDate}}</p>
+      </div>
+
+      <form action='/like/{{video.videoId}}' method='post'>
+        <button type='submit'>❤️</button>
+        <label> {{video.likes}}</label>
+      </form>
+
+    </div>
+
+    <h3>{{totalCmts}} Comments</h3>
+    {{#each comments}}
+      <div class='comment'>
+        <p>From <span class="username">{{this.username}}</span>:</p>
+        <p class="cmt-text">{{this.text}}</p>
+      </div>
+    {{/each}}
+    <h3>Add a comment: </h3>
+    <form class="comment-container" action='/comment/{{video.videoId}}' method='post'>
+      <label for="username">Username: 
+      <input class="text-field" type='text' name='username' id='username' /></label>
+      <label for="comment">Comment: 
+      <input type="text" name='comment' id='comment' class="text-field"></input></label>
+      <button type='submit'>Comment</button>
+    </form>
+
+  </div>
+
+</main>
