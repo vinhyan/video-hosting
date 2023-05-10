@@ -21,12 +21,26 @@ app.engine(
 app.set('view engine', '.hbs');
 app.use(express.urlencoded({ extend: true }));
 
+// DotEnv
+
+const dotenv = require('dotenv');
+dotenv.config({ path: './config/keys.env' });
+
 //DATABASE
 const mongoose = require('mongoose');
 
-mongoose.connect(
-  'mongodb+srv://dbVnhan1:Vo6E6zle2I9ze4O0@cluster0.feodmn6.mongodb.net/?retryWrites=true&w=majority'
-);
+mongoose
+  .connect(process.env.MONGO_CONN_STRING, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log('Connected to MongoDB');
+    app.listen(HTTP_PORT, HttpOnStart);
+  })
+  .catch((err) => {
+    console.log(`${err}: Unable to connect to MongoDB`);
+  });
 
 const Schema = mongoose.Schema;
 
@@ -106,6 +120,26 @@ const videoData = [
   },
 ];
 
+[
+  {
+    videoId: 'pDB8a389rdg',
+    title:
+      'Visiting the Ghibli village in Japan| Yufuin Floral village, Hells of Beppu Oita | Japan travel vlog',
+    channel: 'Sol Life',
+    likes: 0,
+    image: 'https://img.youtube.com/vi/pDB8a389rdg/maxresdefault.jpg',
+    uploadDate: 'Dec 8, 2021',
+  },
+  {
+    videoId: 'ByXuk9QqQkk',
+    title: 'Spirited Away - Official Trailer',
+    channel: 'Crunchyroll Store Australia',
+    likes: 0,
+    image: 'https://img.youtube.com/vi/ByXuk9QqQkk/maxresdefault.jpg',
+    uploadDate: 'Sep 17, 2014',
+  },
+];
+
 const loadVidData = () => {
   for (let i = 0; i < videoData.length; i++) {
     const video = videoData[i];
@@ -160,21 +194,6 @@ app.post('/search', async (req, res) => {
   let matchedResults = [];
 
   try {
-  //   const videoFoundList = await Video.find({ title: keyword }).lean();
-  //   console.log(videoFoundList);
-  //   if (videoFoundList.length === 0) {
-  //     res.render('error', {
-  //       layout: 'primary',
-  //       err: 'No videos found from the database!',
-  //     });
-  //     return;
-  //   } else {
-  //     return res.render('home', {
-  //       layout: 'primary',
-  //       videos: videoFoundList,
-  //     });
-  //   }
-
     const videoList = await Video.find().lean();
 
     if (videoList.length === 0) {
@@ -239,13 +258,37 @@ app.post('/view-details/:id', async (req, res) => {
   }
 });
 
-app.post('/like/:id', async (req, res) => {
-  // console.log(`[DEBUG] LIKE: video id ${req.params.id}`);
+app.get('/view-details/:id', async (req, res) => {
+  // console.log(`[DEBUG] video id ${req.params.id}`);
 
   try {
     const idFromParams = req.params.id;
-    const vidFromDB = await Video.findOne({ videoId: idFromParams });
+    const vidFromDB = await Video.findOne({ videoId: idFromParams }).lean();
     const cmtFromDB = await Comment.find({ videoId: idFromParams }).lean();
+
+    if (vidFromDB === null) {
+      res.render('error', { layout: 'primary', err: 'No videos found!' });
+      return;
+    }
+
+    const totalCmts = cmtFromDB.length;
+
+    res.render('view-details', {
+      layout: 'primary',
+      video: vidFromDB,
+      comments: cmtFromDB,
+      totalCmts: totalCmts,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+app.post('/like/:id', async (req, res) => {
+  try {
+    const idFromParams = req.params.id;
+    const vidFromDB = await Video.findOne({ videoId: idFromParams });
+    // const cmtFromDB = await Comment.find({ videoId: idFromParams }).lean();
 
     if (vidFromDB === null) {
       res.render('error', { layout: 'primary', err: 'No videos found!' });
@@ -253,17 +296,17 @@ app.post('/like/:id', async (req, res) => {
     }
     vidFromDB.likes += 1;
     await vidFromDB.save();
-    const updatedVid = await Video.findOne({ videoId: idFromParams }).lean();
+    await Video.findOne({ videoId: idFromParams }).lean();
 
-    const totalCmts = cmtFromDB.length;
+    // const totalCmts = cmtFromDB.length;
 
-    res.render('view-details', {
-      layout: 'primary',
-      video: updatedVid,
-      comments: cmtFromDB,
-      totalCmts: totalCmts,
-    });
-    return;
+    // res.render('view-details', {
+    //   layout: 'primary',
+    //   video: updatedVid,
+    //   comments: cmtFromDB,
+    //   totalCmts: totalCmts,
+    // });
+    return res.redirect(`/view-details/${idFromParams}`);
   } catch (err) {
     console.log(err);
   }
@@ -276,6 +319,9 @@ app.post('/comment/:id', async (req, res) => {
     const usernameForm = req.body.username;
 
     const commentForm = req.body.comment;
+    if (commentForm.length === 0 || usernameForm === 0) {
+      return res.redirect(`/view-details/${idFromParams}`);
+    }
     // console.log(`[DEBUG] COMMENT: username ${usernameForm}`);
     // console.log(`[DEBUG] COMMENT: comment ${commentForm}`);
     const vidFromDB = await Video.findOne({ videoId: idFromParams }).lean();
@@ -292,17 +338,17 @@ app.post('/comment/:id', async (req, res) => {
     });
 
     await cmtToAdd.save();
-    const cmtFromDB = await Comment.find({ videoId: idFromParams }).lean();
+    // const cmtFromDB = await Comment.find({ videoId: idFromParams }).lean();
 
-    const totalCmts = cmtFromDB.length;
+    // const totalCmts = cmtFromDB.length;
 
-    res.render('view-details', {
-      layout: 'primary',
-      video: vidFromDB,
-      comments: cmtFromDB,
-      totalCmts: totalCmts,
-    });
-    return;
+    // res.render('view-details', {
+    //   layout: 'primary',
+    //   video: vidFromDB,
+    //   comments: cmtFromDB,
+    //   totalCmts: totalCmts,
+    // });
+    return res.redirect(`/view-details/${idFromParams}`);
   } catch (err) {
     console.log(err);
   }
@@ -363,4 +409,4 @@ const HttpOnStart = () => {
   console.log('Press Ctrl+C to stop running');
 };
 
-app.listen(HTTP_PORT, HttpOnStart);
+// app.listen(HTTP_PORT, HttpOnStart);
